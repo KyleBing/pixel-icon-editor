@@ -15,6 +15,7 @@ import {
   resizeAsNew,
   setIconTemplate,
   patchIconTemplateView,
+  importIcons,
 } from './lib/iconStore.js'
 import {
   iconToHeader,
@@ -29,6 +30,12 @@ import {
   getTemplateBlob,
   gcTemplates as gcTemplateBlobs,
 } from './lib/templateDb.js'
+import {
+  buildProjectFile,
+  downloadProjectJson,
+  parseProjectFile,
+  PROJECT_EXT,
+} from './lib/projectFile.js'
 
 const tool = ref('brush')
 const brushMode = ref('solid')
@@ -168,6 +175,49 @@ function doExportHeader() {
 function doExportAllHeaders() {
   const text = iconsToHeader(icons.value, exportOpts())
   downloadText('pixel_icons.h', text)
+}
+
+const projectFileRef = ref(null)
+
+/** 导出当前图标为 .pixelicon.json（含模板） */
+async function doExportProjectOne() {
+  flushTemplateViewToIcon(activeId.value)
+  const icon = activeIcon.value
+  if (!icon) return
+  const project = await buildProjectFile(icons.value, {
+    includeTemplates: true,
+    onlyActiveId: icon.id,
+  })
+  downloadProjectJson(`${icon.name || 'icon'}${PROJECT_EXT}`, project)
+}
+
+/** 导出全部图标为作品包 */
+async function doExportProjectAll() {
+  flushTemplateViewToIcon(activeId.value)
+  const project = await buildProjectFile(icons.value, { includeTemplates: true })
+  downloadProjectJson(`pixel-icons${PROJECT_EXT}`, project)
+}
+
+function pickProjectFile() {
+  projectFileRef.value?.click()
+}
+
+async function onProjectFile(e) {
+  const f = e.target.files?.[0]
+  e.target.value = ''
+  if (!f) return
+  try {
+    const text = await f.text()
+    const { icons: list, warnings } = await parseProjectFile(text)
+    importIcons(list, { selectFirst: true })
+    gcTemplateBlobs(icons.value.map((i) => i.templateId)).catch(() => {})
+    const tip =
+      `已导入 ${list.length} 个图标` +
+      (warnings.length ? `\n注意：${warnings.join('；')}` : '')
+    alert(tip)
+  } catch (err) {
+    alert(`导入失败：${err?.message || err}`)
+  }
 }
 
 function applyTemplateView(view) {
@@ -500,6 +550,32 @@ onBeforeUnmount(() => {
       </button>
       <div class="spacer" />
       <div class="export-group">
+        <input
+          ref="projectFileRef"
+          type="file"
+          accept=".json,application/json,.pixelicon.json"
+          hidden
+          @change="onProjectFile"
+        />
+        <button type="button" class="btn" title="导入 .pixelicon.json" @click="pickProjectFile">
+          导入作品
+        </button>
+        <button
+          type="button"
+          class="btn"
+          title="导出当前为 .pixelicon.json"
+          @click="doExportProjectOne"
+        >
+          导出作品
+        </button>
+        <button
+          type="button"
+          class="btn"
+          title="导出全部图标"
+          @click="doExportProjectAll"
+        >
+          导出全部
+        </button>
         <label style="font-size: 12px; opacity: 0.85">
           填充
           <select v-model="exportPad">

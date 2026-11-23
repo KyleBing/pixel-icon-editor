@@ -27,9 +27,9 @@ export function defaultTemplateView() {
   }
 }
 
-function normalizeTemplateView(raw) {
+export function normalizeTemplateViewExport(raw) {
   const d = defaultTemplateView()
-  if (!raw || typeof raw !== 'object') return d
+  if (!raw || typeof raw !== 'object') return { ...d }
   return {
     scale: Number(raw.scale) || d.scale,
     opacity: raw.opacity != null ? Number(raw.opacity) : d.opacity,
@@ -39,6 +39,10 @@ function normalizeTemplateView(raw) {
     whiteTransparent:
       raw.whiteTransparent != null ? !!raw.whiteTransparent : d.whiteTransparent,
   }
+}
+
+function normalizeTemplateView(raw) {
+  return normalizeTemplateViewExport(raw)
 }
 
 function serializeIcon(icon) {
@@ -161,6 +165,30 @@ export function createIcon(w, h, name) {
   icons.value.push(icon)
   activeId.value = icon.id
   return icon
+}
+
+/** 批量导入作品图标（已带新 id / templateId） */
+export function importIcons(list, { selectFirst = true } = {}) {
+  if (!list?.length) return []
+  const added = []
+  for (const item of list) {
+    const icon = {
+      id: item.id || uid(),
+      name: item.name || `import-${icons.value.length + 1}`,
+      w: item.w,
+      h: item.h,
+      pixels:
+        item.pixels instanceof Uint8Array
+          ? item.pixels
+          : new Uint8Array(item.pixels),
+      templateId: item.templateId || null,
+      templateView: normalizeTemplateView(item.templateView),
+    }
+    icons.value.push(icon)
+    added.push(icon)
+  }
+  if (selectFirst && added.length) activeId.value = added[0].id
+  return added
 }
 
 export function duplicateIcon(id) {

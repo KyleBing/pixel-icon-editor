@@ -1,0 +1,27 @@
+{
+  "name": "pixel-icon-editor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "NOTE4C 四色像素图标编辑器",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "bash deploy.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/KyleBing/pixel-icon-editor.git"
+  },
+  "author": "KyleBing",
+  "license": "MIT",
+  "homepage": "https://kylebing.cn/tools/pixel-icon-editor/",
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.3"
+  }
+}

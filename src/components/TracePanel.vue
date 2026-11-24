@@ -65,15 +65,17 @@ function onScaleInput(e) {
         <button type="button" @click="emit('stamp')">排印到画板</button>
       </div>
       <p class="hint">按当前缩放/位置采样，量化为黑白黄红写入画板（可撤销）。</p>
-      <label class="trace-check">
-        <input
-          type="checkbox"
-          :checked="drag"
-          @change="emit('update:drag', $event.target.checked)"
-        />
-        拖动模板
-      </label>
-      <p v-if="drag" class="hint">开启后在画布上拖动参考图；关掉再描像素。</p>
+
+      <button
+        type="button"
+        class="mode-toggle block"
+        :class="{ on: drag }"
+        @click="emit('update:drag', !drag)"
+      >
+        {{ drag ? '● 拖动模板 · 开' : '○ 拖动模板 · 关' }}
+      </button>
+      <p v-if="drag" class="hint">画布上拖动参考图；关掉后再描像素。</p>
+
       <label class="trace-row">
         <span>模板</span>
         <input

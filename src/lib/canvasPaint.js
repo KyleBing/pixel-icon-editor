@@ -92,6 +92,29 @@ export function paintLine(x0, y0, x1, y1, stampFn) {
   }
 }
 
+/**
+ * 整体平移像素；空白填 fill（默认白）
+ * dx>0 内容向右，dy>0 内容向下
+ */
+export function shiftPixels(src, w, h, dx, dy, fill = 1) {
+  const out = new Uint8Array(w * h)
+  out.fill(fill)
+  if (!dx && !dy) {
+    out.set(src)
+    return out
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const sx = x - dx
+      const sy = y - dy
+      if (sx >= 0 && sy >= 0 && sx < w && sy < h) {
+        out[y * w + x] = src[sy * w + sx]
+      }
+    }
+  }
+  return out
+}
+
 /** 从源复制到新尺寸，裁剪或白底填充 */
 export function resizePixels(src, sw, sh, nw, nh, fill = 1) {
   const out = new Uint8Array(nw * nh)

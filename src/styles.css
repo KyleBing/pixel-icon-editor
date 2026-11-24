@@ -158,6 +158,36 @@ select {
   margin: 0 2px;
 }
 
+/* 模式开关：更醒目 */
+.mode-toggle {
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  border: 2px solid #1a1a1a !important;
+  padding: 6px 12px !important;
+  background: #fff !important;
+  color: #1a1a1a !important;
+}
+
+.mode-toggle.on {
+  background: #ffcc00 !important;
+  color: #111 !important;
+  border-color: #111 !important;
+  box-shadow: inset 0 0 0 1px #111;
+}
+
+.mode-toggle:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.mode-toggle.block {
+  display: block;
+  width: 100%;
+  margin: 8px 0 4px;
+  text-align: center;
+  font-size: 13px;
+}
+
 .toolbar label {
   display: inline-flex;
   align-items: center;

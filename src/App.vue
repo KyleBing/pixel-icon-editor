@@ -79,8 +79,19 @@ const bgScale = ref(1) // 1×=贴合画布，最大 20×
 const bgX = ref(0)
 const bgY = ref(0)
 const bgDrag = ref(false)
+const contentMove = ref(false) // 整体移动画布像素
 const whiteTransparent = ref(true)
 const paintOpacity = ref(1)
+
+function toggleContentMove() {
+  contentMove.value = !contentMove.value
+  if (contentMove.value) bgDrag.value = false
+}
+
+function toggleBgDrag(on) {
+  bgDrag.value = on
+  if (on) contentMove.value = false
+}
 /** @type {Map<string, HTMLImageElement>} */
 const templateImageCache = new Map()
 let restoringTemplate = false
@@ -321,6 +332,7 @@ async function onBgLoad(payload) {
   bgX.value = pos.bgX
   bgY.value = pos.bgY
   bgDrag.value = true
+  contentMove.value = false
   whiteTransparent.value = true
   setIconTemplate(icon.id, id, currentTemplateView())
   // 旧无引用模板回收
@@ -643,6 +655,26 @@ onBeforeUnmount(() => {
           <span class="toolbar-sep" />
           <button
             type="button"
+            class="mode-toggle"
+            :class="{ on: contentMove }"
+            title="开启后拖动画布，整体平移像素内容"
+            @click="toggleContentMove"
+          >
+            {{ contentMove ? '● 移动内容' : '○ 移动内容' }}
+          </button>
+          <button
+            type="button"
+            class="mode-toggle"
+            :class="{ on: bgDrag && !!bgImage }"
+            :disabled="!bgImage"
+            title="开启后拖动背景模板"
+            @click="toggleBgDrag(!(bgDrag && bgImage))"
+          >
+            {{ bgDrag && bgImage ? '● 拖动模板' : '○ 拖动模板' }}
+          </button>
+          <span class="toolbar-sep" />
+          <button
+            type="button"
             :class="{ on: mirrorH }"
             title="左右对称"
             @click="mirrorH = !mirrorH"
@@ -679,7 +711,15 @@ onBeforeUnmount(() => {
           </label>
           <button type="button" title="画板居中" @click="centerView">居中</button>
           <span class="meta">
-            {{ sizeLabel }} · {{ brushLabel }} · 滚轮缩放 · 空格拖动
+            {{ sizeLabel }} ·
+            {{
+              contentMove
+                ? '移动内容中'
+                : bgDrag && bgImage
+                  ? '拖模板中'
+                  : brushLabel
+            }}
+            · 滚轮缩放 · 空格拖视口
           </span>
         </div>
         <div
@@ -711,6 +751,7 @@ onBeforeUnmount(() => {
               v-model:bg-x="bgX"
               v-model:bg-y="bgY"
               :bg-drag="bgDrag"
+              :content-move="contentMove"
               :white-transparent="whiteTransparent"
               :paint-opacity="paintOpacity"
               :space-held="spaceHeld"
@@ -737,8 +778,9 @@ onBeforeUnmount(() => {
           v-model:opacity="bgOpacity"
           v-model:paint-opacity="paintOpacity"
           v-model:scale="bgScale"
-          v-model:drag="bgDrag"
+          :drag="bgDrag"
           v-model:white-transparent="whiteTransparent"
+          @update:drag="toggleBgDrag"
           @load="onBgLoad"
           @clear="onBgClear"
           @stamp="doStampTemplate"

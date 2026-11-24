@@ -8,6 +8,7 @@ import {
   paintLine,
   createUndoStack,
   expandSymmetryPoints,
+  shiftPixels,
 } from '../lib/canvasPaint.js'
 import { activeIcon, commitPixels } from '../lib/iconStore.js'
 import { layoutBg, zoomAbout, clampBgScale, templateVisibleCenter } from '../lib/bgLayout.js'
@@ -31,6 +32,8 @@ const props = defineProps({
   paintOpacity: { type: Number, default: 1 },
   // 空格拖动画布时禁止绘制
   spaceHeld: { type: Boolean, default: false },
+  // 整体移动画布像素内容
+  contentMove: { type: Boolean, default: false },
   // 对称 / 旋转辅助（以画布中心为基点）
   mirrorH: { type: Boolean, default: false },
   mirrorV: { type: Boolean, default: false },
@@ -60,12 +63,23 @@ let dragStartClientY = 0
 let dragStartBgX = 0
 let dragStartBgY = 0
 
+// 整体平移像素
+const movingContent = ref(false)
+let moveStartCellX = 0
+let moveStartCellY = 0
+let moveSnapshot = null
+let moveLastDx = 0
+let moveLastDy = 0
+
 // 避免外部改 scale 时与内部锚点缩放互相抢
 let applyingZoom = false
 let lastScale = props.bgScale
 
 const canvasCursor = computed(() => {
   if (props.spaceHeld) return 'grab'
+  if (props.contentMove) {
+    return movingContent.value ? 'grabbing' : 'move'
+  }
   if (props.bgDrag && props.bgImage) {
     return draggingBg.value ? 'grabbing' : 'grab'
   }
@@ -348,6 +362,23 @@ function onPointerDown(e) {
   // 空格平移由外层处理
   if (props.spaceHeld) return
 
+  // 整体移动画布内容（按格对齐）
+  if (props.contentMove) {
+    const cell = ptrToCell(e)
+    if (!cell || !localPixels.value) return
+    pushUndo()
+    movingContent.value = true
+    moveStartCellX = cell[0]
+    moveStartCellY = cell[1]
+    moveSnapshot = new Uint8Array(localPixels.value)
+    moveLastDx = 0
+    moveLastDy = 0
+    strokeDirty = false
+    activePointerId = e.pointerId
+    canvasRef.value?.setPointerCapture(e.pointerId)
+    return
+  }
+
   if (props.bgDrag && props.bgImage) {
     draggingBg.value = true
     dragStartClientX = e.clientX
@@ -383,8 +414,35 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   // 指针离开绘制区：结束拖动并丢掉按下状态
-  if ((draggingBg.value || drawing) && !pointerInCanvas(e)) {
+  if (
+    (draggingBg.value || drawing || movingContent.value) &&
+    !pointerInCanvas(e)
+  ) {
     endStroke(e)
+    return
+  }
+  if (movingContent.value && moveSnapshot) {
+    const cell = ptrToCell(e)
+    if (!cell) {
+      endStroke(e)
+      return
+    }
+    const dx = cell[0] - moveStartCellX
+    const dy = cell[1] - moveStartCellY
+    if (dx === moveLastDx && dy === moveLastDy) return
+    moveLastDx = dx
+    moveLastDy = dy
+    const icon = activeIcon.value
+    localPixels.value = shiftPixels(
+      moveSnapshot,
+      icon.w,
+      icon.h,
+      dx,
+      dy,
+      1,
+    )
+    strokeDirty = !!(dx || dy)
+    redraw()
     return
   }
   if (draggingBg.value) {
@@ -413,6 +471,20 @@ function onPointerMove(e) {
 
 function endStroke(e) {
   releasePointer(e)
+  if (movingContent.value) {
+    movingContent.value = false
+    moveSnapshot = null
+    if (strokeDirty && localPixels.value) {
+      commitPixels(localPixels.value)
+    } else {
+      undo.pop()
+      emit('undo-state', undo.length)
+    }
+    strokeDirty = false
+    moveLastDx = 0
+    moveLastDy = 0
+    return
+  }
   if (draggingBg.value) {
     draggingBg.value = false
     return
@@ -429,7 +501,7 @@ function endStroke(e) {
 }
 
 function onPointerLeave(e) {
-  if (draggingBg.value || drawing) endStroke(e)
+  if (draggingBg.value || drawing || movingContent.value) endStroke(e)
 }
 
 /** Alt+滚轮：缩放模板；普通滚轮交给外层缩放绘制区 */

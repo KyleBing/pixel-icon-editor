@@ -48,6 +48,13 @@ const emit = defineEmits([
   'update:bgY',
 ])
 
+function emitUndoState() {
+  emit('undo-state', {
+    undo: undo.undoLength,
+    redo: undo.redoLength,
+  })
+}
+
 const canvasRef = ref(null)
 const overlayRef = ref(null)
 const localPixels = ref(null)
@@ -91,22 +98,33 @@ function syncFromStore() {
   if (!icon) return
   localPixels.value = new Uint8Array(icon.pixels)
   undo.clear()
-  emit('undo-state', 0)
+  emitUndoState()
   redraw()
 }
 
 function pushUndo() {
   if (!localPixels.value) return
   undo.push(localPixels.value)
-  emit('undo-state', undo.length)
+  emitUndoState()
 }
 
 function undoOnce() {
-  const prev = undo.pop()
-  if (!prev || !localPixels.value) return
+  if (!localPixels.value) return
+  const prev = undo.undo(localPixels.value)
+  if (!prev) return
   localPixels.value = new Uint8Array(prev)
   commitPixels(localPixels.value)
-  emit('undo-state', undo.length)
+  emitUndoState()
+  redraw()
+}
+
+function redoOnce() {
+  if (!localPixels.value) return
+  const next = undo.redo(localPixels.value)
+  if (!next) return
+  localPixels.value = new Uint8Array(next)
+  commitPixels(localPixels.value)
+  emitUndoState()
   redraw()
 }
 
@@ -477,8 +495,8 @@ function endStroke(e) {
     if (strokeDirty && localPixels.value) {
       commitPixels(localPixels.value)
     } else {
-      undo.pop()
-      emit('undo-state', undo.length)
+      undo.discard()
+      emitUndoState()
     }
     strokeDirty = false
     moveLastDx = 0
@@ -494,8 +512,8 @@ function endStroke(e) {
   if (strokeDirty && localPixels.value) {
     commitPixels(localPixels.value)
   } else {
-    undo.pop()
-    emit('undo-state', undo.length)
+    undo.discard()
+    emitUndoState()
   }
   strokeDirty = false
 }
@@ -597,7 +615,20 @@ onBeforeUnmount(() => {
 })
 
 function onKey(e) {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+  if (!(e.metaKey || e.ctrlKey)) return
+  const k = e.key.toLowerCase()
+  // ⌘Z 撤销；⌘⇧Z / ⌘Y 重做
+  if (k === 'z' && e.shiftKey) {
+    e.preventDefault()
+    redoOnce()
+    return
+  }
+  if (k === 'y') {
+    e.preventDefault()
+    redoOnce()
+    return
+  }
+  if (k === 'z') {
     e.preventDefault()
     undoOnce()
   }
@@ -605,6 +636,7 @@ function onKey(e) {
 
 defineExpose({
   undoOnce,
+  redoOnce,
   clearBoard,
   stampTemplate,
   redraw,

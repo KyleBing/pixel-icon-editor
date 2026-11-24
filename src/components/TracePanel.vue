@@ -60,6 +60,20 @@ function onScaleInput(e) {
         清除
       </button>
     </div>
+    <!-- 绘制透明度与是否有模板无关，清除背景后仍可调 -->
+    <label class="trace-row">
+      <span>绘制</span>
+      <input
+        type="range"
+        min="0.05"
+        max="1"
+        step="0.05"
+        :value="paintOpacity"
+        @input="emit('update:paintOpacity', +$event.target.value)"
+      />
+      <em>{{ Math.round(paintOpacity * 100) }}%</em>
+    </label>
+    <p class="hint">调低「绘制」透明度可透出模板临摹。</p>
     <template v-if="hasImage">
       <div class="mini-actions" style="margin-top: 6px">
         <button type="button" @click="emit('stamp')">排印到画板</button>
@@ -88,19 +102,6 @@ function onScaleInput(e) {
         />
         <em>{{ Math.round(opacity * 100) }}%</em>
       </label>
-      <label class="trace-row">
-        <span>绘制</span>
-        <input
-          type="range"
-          min="0.05"
-          max="1"
-          step="0.05"
-          :value="paintOpacity"
-          @input="emit('update:paintOpacity', +$event.target.value)"
-        />
-        <em>{{ Math.round(paintOpacity * 100) }}%</em>
-      </label>
-      <p class="hint">调低「绘制」透明度可透出模板临摹。</p>
       <label class="trace-row">
         <span>缩放</span>
         <input

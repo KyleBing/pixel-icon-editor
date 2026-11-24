@@ -37,6 +37,7 @@ import {
   PROJECT_EXT,
 } from './lib/projectFile.js'
 
+const baseUrl = import.meta.env.BASE_URL
 const tool = ref('brush')
 const brushMode = ref('solid')
 const solidColor = ref(0)
@@ -60,6 +61,7 @@ const mirrorH = ref(false) // 左右对称
 const mirrorV = ref(false) // 上下对称
 const rotateN = ref(1) // 旋转份数，1=关
 const undoLen = ref(0)
+const redoLen = ref(0)
 const showGallery = ref(false)
 const exportScale = ref(1)
 const exportPad = ref('white') // white | black — 行尾填充色
@@ -182,10 +184,20 @@ function doExportHeader() {
   downloadText(`${toCIdent(icon.name)}.h`, text)
 }
 
+// 导出文件名用：20261124-092155
+function exportTimestamp() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return (
+    `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
+    `-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
+  )
+}
+
 // 导出全部暂存图标
 function doExportAllHeaders() {
   const text = iconsToHeader(icons.value, exportOpts())
-  downloadText('pixel_icons.h', text)
+  downloadText(`pixel_icons-${exportTimestamp()}.h`, text)
 }
 
 const projectFileRef = ref(null)
@@ -206,7 +218,7 @@ async function doExportProjectOne() {
 async function doExportProjectAll() {
   flushTemplateViewToIcon(activeId.value)
   const project = await buildProjectFile(icons.value, { includeTemplates: true })
-  downloadProjectJson(`pixel-icons${PROJECT_EXT}`, project)
+  downloadProjectJson(`pixel-icons-${exportTimestamp()}${PROJECT_EXT}`, project)
 }
 
 function pickProjectFile() {
@@ -358,15 +370,22 @@ function onBgClear() {
   bgScale.value = 1
   bgX.value = 0
   bgY.value = 0
+  // 清除模板后恢复绘制不透明，避免仍透底却找不到滑块
+  paintOpacity.value = 1
   gcTemplateBlobs(icons.value.map((i) => i.templateId)).catch(() => {})
 }
 
-function onUndoState(n) {
-  undoLen.value = n
+function onUndoState(state) {
+  undoLen.value = state?.undo ?? 0
+  redoLen.value = state?.redo ?? 0
 }
 
 function doUndo() {
   canvasRef.value?.undoOnce()
+}
+
+function doRedo() {
+  canvasRef.value?.redoOnce()
 }
 
 function doClear() {
@@ -382,6 +401,7 @@ function doStampTemplate() {
 
 watch(activeIcon, () => {
   undoLen.value = 0
+  redoLen.value = 0
 })
 
 // 切换图标：先写回上一张的模板视图，再恢复目标模板（同 templateId 共用文件）
@@ -552,7 +572,16 @@ onBeforeUnmount(() => {
 <template>
   <div class="app-shell">
     <header class="app-header">
-      <h1>像素图标 · NOTE4C 四色</h1>
+      <div class="app-brand">
+        <img
+          class="app-logo"
+          :src="`${baseUrl}logo.png`"
+          width="28"
+          height="28"
+          alt=""
+        />
+        <h1>像素图标 · NOTE4C 四色</h1>
+      </div>
       <button
         type="button"
         :class="{ on: showGallery }"
@@ -620,6 +649,7 @@ onBeforeUnmount(() => {
         <div class="toolbar">
           <button
             type="button"
+            class="tool-brush"
             :class="{ on: tool === 'brush' }"
             title="笔刷 (B)"
             @click="tool = 'brush'"
@@ -628,6 +658,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
+            class="tool-erase"
             :class="{ on: tool === 'erase' }"
             title="橡皮 (E)"
             @click="tool = 'erase'"
@@ -641,8 +672,11 @@ onBeforeUnmount(() => {
           >
             取色
           </button>
-          <button type="button" :disabled="!undoLen" @click="doUndo">
+          <button type="button" :disabled="!undoLen" title="撤销 (⌘Z)" @click="doUndo">
             撤销 ({{ undoLen }})
+          </button>
+          <button type="button" :disabled="!redoLen" title="重做 (⌘⇧Z)" @click="doRedo">
+            重做 ({{ redoLen }})
           </button>
           <button type="button" @click="doClear">清空</button>
           <button

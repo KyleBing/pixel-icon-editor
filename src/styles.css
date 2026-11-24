@@ -47,6 +47,19 @@ select {
   flex-shrink: 0;
 }
 
+.app-header .app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-header .app-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
 .app-header h1 {
   margin: 0;
   font-size: 15px;
@@ -143,6 +156,41 @@ select {
   background: #1a1a1a;
   color: #fff;
   border-color: #1a1a1a;
+}
+
+/* 笔刷：蓝；橡皮：橙红，未选中也带色相区分 */
+.toolbar button.tool-brush {
+  background: #dce8f8;
+  border-color: #6b9bd1;
+  color: #1a4a7a;
+  font-weight: 600;
+}
+
+.toolbar button.tool-brush:hover {
+  background: #c5daf4;
+}
+
+.toolbar button.tool-brush.on {
+  background: #1d6fd8;
+  border-color: #1557ad;
+  color: #fff;
+}
+
+.toolbar button.tool-erase {
+  background: #f8e0d8;
+  border-color: #d4886b;
+  color: #8a3a22;
+  font-weight: 600;
+}
+
+.toolbar button.tool-erase:hover {
+  background: #f4d0c4;
+}
+
+.toolbar button.tool-erase.on {
+  background: #e04b2a;
+  border-color: #b83a1e;
+  color: #fff;
 }
 
 .toolbar .meta {
@@ -297,7 +345,6 @@ select {
   touch-action: none;
 }
 
-.sidebar-head,
 .palette-head {
   padding: 10px 10px 6px;
   font-size: 11px;
@@ -305,6 +352,16 @@ select {
   color: #666;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* 侧栏操作区吸顶，列表滚动时仍可见 */
+.sidebar-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 8px;
+  background: #f7f5f0;
+  border-bottom: 1px solid #ddd9ce;
 }
 
 .sidebar-actions {

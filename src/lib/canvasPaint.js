@@ -129,24 +129,48 @@ export function resizePixels(src, sw, sh, nw, nh, fill = 1) {
   return out
 }
 
-const UNDO_MAX = 30
+const UNDO_MAX = 50
 
+/** 撤销 / 重做栈，各最多保留 UNDO_MAX 步 */
 export function createUndoStack() {
   /** @type {Uint8Array[]} */
-  const stack = []
+  const undo = []
+  /** @type {Uint8Array[]} */
+  const redo = []
   return {
+    // 新操作：压入撤销栈并清空重做
     push(pixels) {
-      stack.push(new Uint8Array(pixels))
-      if (stack.length > UNDO_MAX) stack.shift()
+      undo.push(new Uint8Array(pixels))
+      if (undo.length > UNDO_MAX) undo.shift()
+      redo.length = 0
     },
-    pop() {
-      return stack.pop() || null
+    // 空笔画等：丢掉刚 push 的快照，不进重做
+    discard() {
+      undo.pop()
     },
-    get length() {
-      return stack.length
+    // 撤销：当前态进重做，返回上一步
+    undo(current) {
+      if (!undo.length) return null
+      redo.push(new Uint8Array(current))
+      if (redo.length > UNDO_MAX) redo.shift()
+      return undo.pop() || null
+    },
+    // 重做：当前态进撤销，返回下一步
+    redo(current) {
+      if (!redo.length) return null
+      undo.push(new Uint8Array(current))
+      if (undo.length > UNDO_MAX) undo.shift()
+      return redo.pop() || null
+    },
+    get undoLength() {
+      return undo.length
+    },
+    get redoLength() {
+      return redo.length
     },
     clear() {
-      stack.length = 0
+      undo.length = 0
+      redo.length = 0
     },
   }
 }

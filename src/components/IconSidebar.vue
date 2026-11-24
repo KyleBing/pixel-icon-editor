@@ -61,13 +61,14 @@ function onDelete(icon) {
 
 <template>
   <aside class="panel panel-sidebar">
-    <div class="sidebar-head">图标</div>
-    <div class="sidebar-actions">
-      <button type="button" @click="emit('new')">新建</button>
-      <button type="button" @click="duplicateIcon(activeId)">复制</button>
-    </div>
-    <div class="sidebar-actions">
-      <button type="button" @click="emit('resize-as')">另存尺寸</button>
+    <div class="sidebar-top">
+      <div class="sidebar-actions">
+        <button type="button" @click="emit('new')">新建</button>
+        <button type="button" @click="duplicateIcon(activeId)">复制</button>
+      </div>
+      <div class="sidebar-actions">
+        <button type="button" @click="emit('resize-as')">另存尺寸</button>
+      </div>
     </div>
     <ul class="thumb-list">
       <li

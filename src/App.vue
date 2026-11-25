@@ -6,7 +6,7 @@ import IconSidebar from './components/IconSidebar.vue'
 import IconGallery from './components/IconGallery.vue'
 import TracePanel from './components/TracePanel.vue'
 import IconPreview from './components/IconPreview.vue'
-import { SIZE_PRESETS, exportPngBlob, PAL } from './lib/colors.js'
+import { SIZE_PRESETS, exportPngBlob, pixelsToSvg, downloadSvg, PAL } from './lib/colors.js'
 import {
   activeIcon,
   activeId,
@@ -170,6 +170,14 @@ async function doExportPng() {
   a.download = `${icon.name || 'icon'}@${exportScale.value}x.png`
   a.click()
   URL.revokeObjectURL(a.href)
+}
+
+// 导出当前图标为 SVG（同行同色合并 rect）
+function doExportSvg() {
+  const icon = activeIcon.value
+  if (!icon) return
+  const svg = pixelsToSvg(icon.pixels, icon.w, icon.h, exportScale.value)
+  downloadSvg(`${icon.name || 'icon'}@${exportScale.value}x.svg`, svg)
 }
 
 function exportOpts() {
@@ -625,7 +633,7 @@ onBeforeUnmount(() => {
           </select>
         </label>
         <label style="font-size: 12px; opacity: 0.85">
-          PNG
+          倍率
           <select v-model.number="exportScale">
             <option :value="1">1×</option>
             <option :value="2">2×</option>
@@ -633,6 +641,9 @@ onBeforeUnmount(() => {
           </select>
         </label>
         <button type="button" class="btn" @click="doExportPng">PNG</button>
+        <button type="button" class="btn" title="矢量 SVG，倍率影响默认显示尺寸" @click="doExportSvg">
+          SVG
+        </button>
         <button type="button" class="btn on" @click="doExportHeader">
           固件 .h
         </button>

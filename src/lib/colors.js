@@ -85,6 +85,51 @@ export function exportPngBlob(pixels, w, h, scale = 1) {
   return new Promise((resolve) => c.toBlob((b) => resolve(b), 'image/png'))
 }
 
+/**
+ * 像素索引 → SVG 字符串（同行同色合并为长条 rect）
+ * viewBox 为逻辑像素；width/height 按 scale 放大便于直接打开预览
+ */
+export function pixelsToSvg(pixels, w, h, scale = 1) {
+  const s = Math.max(1, Math.floor(Number(scale) || 1))
+  const rects = []
+  for (let y = 0; y < h; y++) {
+    let x = 0
+    while (x < w) {
+      const ink = pixels[y * w + x] & 3
+      let x2 = x + 1
+      while (x2 < w && (pixels[y * w + x2] & 3) === ink) x2++
+      const hex = PAL[ink].hex
+      const rw = x2 - x
+      // 单像素用简写；长条写 width
+      if (rw === 1) {
+        rects.push(`<rect x="${x}" y="${y}" width="1" height="1" fill="${hex}"/>`)
+      } else {
+        rects.push(
+          `<rect x="${x}" y="${y}" width="${rw}" height="1" fill="${hex}"/>`,
+        )
+      }
+      x = x2
+    }
+  }
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w * s}" height="${h * s}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">`,
+    ...rects,
+    `</svg>`,
+    ``,
+  ].join('\n')
+}
+
+/** 下载 SVG 文件 */
+export function downloadSvg(filename, svgText) {
+  const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = filename.endsWith('.svg') ? filename : `${filename}.svg`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
 /** 渲染 2×2 tile 为 CSS 四格背景（用于色盘按钮） */
 export function tileCss(tile) {
   const [tl, tr, bl, br] = tile

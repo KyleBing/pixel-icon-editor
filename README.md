@@ -2,6 +2,12 @@
 
 面向 **NOTE4C** 四色墨水屏（黑 / 白 / 黄 / 红）的像素图标绘制工具。
 
+
+<img width="2032" height="1082" alt="editing" src="https://github.com/user-attachments/assets/df0ea062-5386-4ed7-a268-138091c03b2c" />
+<img width="834" height="196" alt="icon-list" src="https://github.com/user-attachments/assets/a4f64821-4c19-44b3-aa99-64431b54a086" />
+
+
+
 ## 线上
 
 https://kylebing.cn/tools/pixel-icon-editor/
@@ -28,7 +34,7 @@ npm run deploy
 - 多图标暂存（localStorage）+ 侧栏缩略图 / 图库
 - 背景模板描摹（IndexedDB 持久化；复制图标共用同一模板文件）
 - 对称 / 旋转辅助绘制；滚轮缩放画布；空格拖动画布
-- 导出 PNG、固件 2bpp `.h`
+- 导出 PNG、SVG、固件 2bpp `.h`
 - **作品导入 / 导出**（`.pixelicon.json`）
 
 ## 快捷键
